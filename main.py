@@ -4,12 +4,14 @@ import time, threading, sys
 import serial
 import numpy as np
 
-
 class SerialReader(threading.Thread):
     """ Defines a thread for reading and buffering serial data.
     By default, about 5MSamples are stored in the buffer.
     Data can be retrieved from the buffer by calling get(N)"""
     def __init__(self, port, chunkSize=1024, chunks=5000):
+
+        print("tamo aqui em cima, ja chamou o método que abre a thread")
+
         threading.Thread.__init__(self)
         # circular buffer for storing serial data until it is
         # fetched by the GUI
@@ -23,7 +25,8 @@ class SerialReader(threading.Thread):
         self.exitFlag = False
         self.exitMutex = threading.Lock()
         self.dataMutex = threading.Lock()
-       
+
+        print("final do metodo __init__, teoricamente tudo esta setado para correr a thread")       
        
     def run(self):
         exitMutex = self.exitMutex
@@ -44,6 +47,8 @@ class SerialReader(threading.Thread):
             data = port.read(self.chunkSize*2)
             # convert data to 16bit int numpy array
             data = np.fromstring(data, dtype=np.uint16)
+
+            print("deveria ter dados aqui, né?")
            
             # keep track of the acquisition rate in samples-per-second
             count += self.chunkSize
@@ -92,7 +97,7 @@ class SerialReader(threading.Thread):
         # (we need calibration data to do a better job on this)
         data = data.astype(np.float32) * (3.3 / 2**12)
         if downsample > 1:  # if downsampling is requested, average N samples together
-            data = data.reshape(num/downsample,downsample).mean(axis=1)
+            data = data.reshape(num // downsample,downsample).mean(axis=1)
             num = data.shape[0]
             return np.linspace(0, (num-1)*1e-6*downsample, num), data, rate
         else:
@@ -106,7 +111,9 @@ class SerialReader(threading.Thread):
 
 # Get handle to serial port
 # (your port string may vary; windows users need 'COMn')
-s = serial.Serial('COM6')
+s = serial.Serial('/dev/ttyACM0',115200)
+
+print(s)
 
 # Create the GUI
 app = pg.mkQApp()
@@ -117,6 +124,8 @@ plt.setYRange(0.0, 3.3)
 # Create thread to read and buffer serial data.
 thread = SerialReader(s)
 thread.start()
+
+print("depois da linha thread.start")
 
 # Calling update() will request a copy of the most recently-acquired
 # samples and plot them.
